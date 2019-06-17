@@ -1,22 +1,18 @@
-const puppeteer = require("puppeteer");
+const Page = require("./helpers/page");
 
-let browser, page;
+let page;
 
 beforeEach(async () => {
-  browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
-  });
-  page = await browser.newPage();
+  page = await Page.build();
   await page.goto("http://localhost:3000");
 });
 
 afterEach(async () => {
-  await browser.close();
+  await page.close();
 });
 
 test("the header has the correct text", async () => {
-  const text = await page.$eval("a.brand-logo", el => el.innerHTML);
+  const text = await page.getContentsOf("a.brand-logo");
 
   expect(text).toEqual("Blogster");
 });
@@ -27,4 +23,13 @@ test("clicking login starts oauth flow", async () => {
   const url = await page.url();
 
   expect(url).toMatch(/accounts\.google\.com/);
+});
+
+test("when signed in, shows logout button", async () => {
+  await page.login();
+
+  await page.waitFor('a[href="/auth/logout"]');
+  const text = await page.getContentsOf('a[href="/auth/logout"]');
+
+  expect(text).toEqual("Logout");
 });
